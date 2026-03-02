@@ -54,6 +54,11 @@ class EmbodimentTag(Enum):
     The Behavior R1 Pro robot.
     """
 
+    R1_LITE = "r1lite"
+    """
+    The Galaxea R1 Lite robot.
+    """
+
     # New embodiment during post-training
     NEW_EMBODIMENT = "new_embodiment"
     """

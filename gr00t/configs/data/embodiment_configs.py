@@ -300,6 +300,92 @@ MODALITY_CONFIGS = {
             modality_keys=["annotation.human.coarse_action"],
         ),
     },
+    "r1lite": {
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=[
+                "left_arm",
+                "right_arm",
+                "left_gripper",
+                "right_gripper",
+                "torso",
+                "left_ee_pose_gripper_base",
+                "right_ee_pose_gripper_base",
+                "chassis",
+            ],
+        ),
+        "action": ModalityConfig(
+            delta_indices=list(range(15)),
+            modality_keys=[
+                "left_arm",
+                "right_arm",
+                "left_gripper",
+                "right_gripper",
+                "torso.positions",
+                "left_ee_pose_gripper_base",
+                "right_ee_pose_gripper_base",
+                "chassis.velocities",
+                "torso.velocities",
+            ],
+            action_configs=[
+                # left_arm
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+                # right_arm
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+                # left_gripper
+                ActionConfig(
+                    rep=ActionRepresentation.ABSOLUTE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+                # right_gripper
+                ActionConfig(
+                    rep=ActionRepresentation.ABSOLUTE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+                # torso.positions (state_key="torso")
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                    state_key="torso",
+                ),
+                # left_ee_pose_gripper_base
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_QUAT_XYZW,
+                ),
+                # right_ee_pose_gripper_base
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_QUAT_XYZW,
+                ),
+                # chassis.velocities
+                ActionConfig(
+                    rep=ActionRepresentation.ABSOLUTE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+                # torso.velocities
+                ActionConfig(
+                    rep=ActionRepresentation.ABSOLUTE,
+                    type=ActionType.NON_EEF,
+                    format=ActionFormat.DEFAULT,
+                ),
+            ],
+        ),
+    },
     "oxe_droid": {
         "video": ModalityConfig(
             delta_indices=[0],

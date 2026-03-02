@@ -30,6 +30,7 @@ class ActionFormat(Enum):
     DEFAULT = "default"
     XYZ_ROT6D = "xyz+rot6d"
     XYZ_ROTVEC = "xyz+rotvec"
+    XYZ_QUAT_XYZW = "xyz+quat_xyzw"
 
 
 @dataclass

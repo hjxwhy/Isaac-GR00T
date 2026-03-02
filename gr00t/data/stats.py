@@ -22,7 +22,13 @@ from gr00t.configs.data.embodiment_configs import MODALITY_CONFIGS
 from gr00t.data.dataset.lerobot_episode_loader import LeRobotEpisodeLoader
 from gr00t.data.state_action.action_chunking import EndEffectorActionChunk, JointActionChunk
 from gr00t.data.state_action.pose import EndEffectorPose, JointPose
-from gr00t.data.types import ActionRepresentation, ActionType, EmbodimentTag, ModalityConfig
+from gr00t.data.types import (
+    ActionFormat,
+    ActionRepresentation,
+    ActionType,
+    EmbodimentTag,
+    ModalityConfig,
+)
 from gr00t.data.utils import to_json_serializable
 
 
@@ -30,6 +36,32 @@ LE_ROBOT_DATA_FILENAME = "data/*/*.parquet"
 LE_ROBOT_INFO_FILENAME = "meta/info.json"
 LE_ROBOT_STATS_FILENAME = "meta/stats.json"
 LE_ROBOT_REL_STATS_FILENAME = "meta/relative_stats.json"
+
+
+def _detect_dataset_version(dataset_path: Path) -> str:
+    """Detect LeRobot dataset version from meta/info.json."""
+    info_path = dataset_path / LE_ROBOT_INFO_FILENAME
+    with open(info_path, "r") as f:
+        info = json.load(f)
+    version = info.get("codebase_version", "v2.0")
+    return "v3" if version.startswith("v3") else "v2"
+
+
+def _load_v3_episode_records(dataset_path: Path) -> list[dict]:
+    """Load episode metadata from v3 parquet files in meta/episodes/."""
+    episodes_dir = dataset_path / "meta" / "episodes"
+    pq_paths = sorted(episodes_dir.glob("chunk-*/file-*.parquet"))
+    assert len(pq_paths) > 0, f"No episode parquet found in {episodes_dir}"
+    records: list[dict] = []
+    for pq_path in pq_paths:
+        table = pd.read_parquet(
+            pq_path,
+            columns=["episode_index", "data/chunk_index", "data/file_index",
+                      "dataset_from_index", "dataset_to_index"],
+        )
+        records.extend(table.to_dict("records"))
+    records.sort(key=lambda r: int(r["episode_index"]))
+    return records
 
 
 def calculate_dataset_statistics(
@@ -141,10 +173,60 @@ class RelativeActionLoader:
             self.modality_configs["state"].delta_indices[-1]
             == self.modality_configs["action"].delta_indices[0]
         )
-        self.loader = LeRobotEpisodeLoader(dataset_path, self.modality_configs)
 
-    def load_relative_actions(self, trajectory_id: int) -> list[np.ndarray]:
-        df = self.loader[trajectory_id]
+        # Branch based on dataset version
+        self._dataset_version = _detect_dataset_version(self.dataset_path)
+        self._state_key = state_key
+        if self._dataset_version == "v3":
+            self._v3_records = _load_v3_episode_records(self.dataset_path)
+            self._parquet_cache: dict[tuple[int, int], pd.DataFrame] = {}
+            # Precompute per-file base offsets for efficient row slicing
+            self._file_base_offsets: dict[tuple[int, int], int] = {}
+            for r in self._v3_records:
+                key = (int(r["data/chunk_index"]), int(r["data/file_index"]))
+                from_idx = int(r["dataset_from_index"])
+                if key not in self._file_base_offsets or from_idx < self._file_base_offsets[key]:
+                    self._file_base_offsets[key] = from_idx
+        else:
+            self.loader = LeRobotEpisodeLoader(dataset_path, self.modality_configs)
+
+    def _get_episode_df_v3(self, trajectory_id: int) -> pd.DataFrame:
+        """Load state and action columns for a single episode from v3 parquet data."""
+        record = self._v3_records[trajectory_id]
+        chunk_idx = int(record["data/chunk_index"])
+        file_idx = int(record["data/file_index"])
+        cache_key = (chunk_idx, file_idx)
+
+        state_col = f"observation.state.{self._state_key}"
+        action_col = f"action.{self.action_key}"
+
+        if cache_key not in self._parquet_cache:
+            path = self.dataset_path / f"data/chunk-{chunk_idx:03d}/file-{file_idx:03d}.parquet"
+            self._parquet_cache[cache_key] = pd.read_parquet(
+                path, columns=[state_col, action_col]
+            )
+
+        full_df = self._parquet_cache[cache_key]
+        from_idx = int(record["dataset_from_index"])
+        to_idx = int(record["dataset_to_index"])
+
+        base_offset = self._file_base_offsets[cache_key]
+        start = from_idx - base_offset
+        stop = to_idx - base_offset
+        episode_slice = full_df.iloc[start:stop]
+
+        result = pd.DataFrame()
+        result[f"state.{self._state_key}"] = episode_slice[state_col].values
+        result[f"action.{self.action_key}"] = episode_slice[action_col].values
+        return result.reset_index(drop=True)
+
+    def load_relative_actions(
+        self, trajectory_id: int, output_format: ActionFormat | None = None
+    ) -> list[np.ndarray]:
+        if self._dataset_version == "v3":
+            df = self._get_episode_df_v3(trajectory_id)
+        else:
+            df = self.loader[trajectory_id]
 
         # OPTIMIZATION: Extract columns once and convert to numpy arrays
         # This eliminates repeated DataFrame.__getitem__ and Series.__getitem__ calls
@@ -166,14 +248,17 @@ class RelativeActionLoader:
             last_state = state_data[state_ind]
             actions = action_data[action_inds]
             if self.action_config.type == ActionType.EEF:
-                action_format = self.action_config.format
-                reference_frame = EndEffectorPose.from_action_format(last_state, action_format)
-                traj = EndEffectorActionChunk.from_array(actions, action_format).relative_chunking(
+                input_format = self.action_config.format
+                out_fmt = output_format or input_format
+                reference_frame = EndEffectorPose.from_action_format(last_state, input_format)
+                traj = EndEffectorActionChunk.from_array(actions, input_format).relative_chunking(
                     reference_frame=reference_frame
                 )
-                trajectories.append(traj.to(action_format).astype(np.float32))
+                trajectories.append(traj.to(out_fmt).astype(np.float32))
             elif self.action_config.type == ActionType.NON_EEF:
-                reference_frame = JointPose(last_state)
+                action_dim = len(actions[0])
+                state_ref = last_state[:action_dim] if len(last_state) > action_dim else last_state
+                reference_frame = JointPose(state_ref)
                 traj = JointActionChunk([JointPose(m) for m in actions]).relative_chunking(
                     reference_frame=reference_frame
                 )
@@ -183,6 +268,8 @@ class RelativeActionLoader:
         return trajectories
 
     def __len__(self) -> int:
+        if self._dataset_version == "v3":
+            return len(self._v3_records)
         return len(self.loader)
 
 
@@ -191,14 +278,16 @@ def calculate_stats_for_key(
     embodiment_tag: EmbodimentTag,
     group_key: str,
     max_episodes: int = -1,
+    output_format: ActionFormat | None = None,
 ) -> dict:
     loader = RelativeActionLoader(dataset_path, embodiment_tag, group_key)
     trajectories = []
     for episode_id in tqdm(range(len(loader)), desc=f"Loading trajectories for key {group_key}"):
         if max_episodes != -1 and episode_id >= max_episodes:
             break
-        trajectories.extend(loader.load_relative_actions(episode_id))
-    return {
+        trajectories.extend(loader.load_relative_actions(episode_id, output_format=output_format))
+    # Per-step stats: shape (chunk_size, action_dim)
+    per_step_stats = {
         "max": np.max(trajectories, axis=0),
         "min": np.min(trajectories, axis=0),
         "q01": np.quantile(trajectories, 0.01, axis=0),
@@ -206,9 +295,24 @@ def calculate_stats_for_key(
         "mean": np.mean(trajectories, axis=0),
         "std": np.std(trajectories, axis=0),
     }
+    # Global stats: flatten across samples and chunk_size, shape (action_dim,)
+    all_steps = np.concatenate(trajectories, axis=0)  # (N * chunk_size, action_dim)
+    global_stats = {
+        "global_max": np.max(all_steps, axis=0),
+        "global_min": np.min(all_steps, axis=0),
+        "global_q01": np.quantile(all_steps, 0.01, axis=0),
+        "global_q99": np.quantile(all_steps, 0.99, axis=0),
+        "global_mean": np.mean(all_steps, axis=0),
+        "global_std": np.std(all_steps, axis=0),
+    }
+    return {**per_step_stats, **global_stats}
 
 
-def generate_rel_stats(dataset_path: Path | str, embodiment_tag: EmbodimentTag) -> None:
+def generate_rel_stats(
+    dataset_path: Path | str,
+    embodiment_tag: EmbodimentTag,
+    output_format: ActionFormat | None = None,
+) -> None:
     dataset_path = Path(dataset_path)
     action_config = MODALITY_CONFIGS[embodiment_tag.value]["action"]
     if action_config.action_configs is None:
@@ -228,14 +332,20 @@ def generate_rel_stats(dataset_path: Path | str, embodiment_tag: EmbodimentTag) 
         if action_key in stats:
             continue
         print(f"Generating relative stats for {dataset_path} {embodiment_tag} {action_key}")
-        stats[action_key] = calculate_stats_for_key(dataset_path, embodiment_tag, action_key)
+        stats[action_key] = calculate_stats_for_key(
+            dataset_path, embodiment_tag, action_key, output_format=output_format
+        )
     with open(stats_path, "w") as f:
         json.dump(to_json_serializable(dict(stats)), f, indent=4)
 
 
-def main(dataset_path: Path | str, embodiment_tag: EmbodimentTag):
-    generate_stats(dataset_path)
-    generate_rel_stats(dataset_path, embodiment_tag)
+def main(
+    dataset_path: Path | str,
+    embodiment_tag: EmbodimentTag,
+    output_format: ActionFormat | None = None,
+):
+    # generate_stats(dataset_path)
+    generate_rel_stats(dataset_path, embodiment_tag, output_format=output_format)
 
 
 if __name__ == "__main__":
