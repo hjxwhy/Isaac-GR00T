@@ -304,8 +304,8 @@ MODALITY_CONFIGS = {
         "state": ModalityConfig(
             delta_indices=[0],
             modality_keys=[
-                "left_arm",
-                "right_arm",
+                # "left_arm",
+                # "right_arm",
                 "left_gripper",
                 "right_gripper",
                 "torso",
@@ -317,29 +317,29 @@ MODALITY_CONFIGS = {
         "action": ModalityConfig(
             delta_indices=list(range(15)),
             modality_keys=[
-                "left_arm",
-                "right_arm",
+                # "left_arm",
+                # "right_arm",
                 "left_gripper",
                 "right_gripper",
                 "torso.positions",
                 "left_ee_pose_gripper_base",
                 "right_ee_pose_gripper_base",
                 "chassis.velocities",
-                "torso.velocities",
+                # "torso.velocities",
             ],
             action_configs=[
-                # left_arm
-                ActionConfig(
-                    rep=ActionRepresentation.RELATIVE,
-                    type=ActionType.NON_EEF,
-                    format=ActionFormat.DEFAULT,
-                ),
-                # right_arm
-                ActionConfig(
-                    rep=ActionRepresentation.RELATIVE,
-                    type=ActionType.NON_EEF,
-                    format=ActionFormat.DEFAULT,
-                ),
+                # # left_arm
+                # ActionConfig(
+                #     rep=ActionRepresentation.RELATIVE,
+                #     type=ActionType.NON_EEF,
+                #     format=ActionFormat.DEFAULT,
+                # ),
+                # # right_arm
+                # ActionConfig(
+                #     rep=ActionRepresentation.RELATIVE,
+                #     type=ActionType.NON_EEF,
+                #     format=ActionFormat.DEFAULT,
+                # ),
                 # left_gripper
                 ActionConfig(
                     rep=ActionRepresentation.ABSOLUTE,
@@ -377,12 +377,12 @@ MODALITY_CONFIGS = {
                     type=ActionType.NON_EEF,
                     format=ActionFormat.DEFAULT,
                 ),
-                # torso.velocities
-                ActionConfig(
-                    rep=ActionRepresentation.ABSOLUTE,
-                    type=ActionType.NON_EEF,
-                    format=ActionFormat.DEFAULT,
-                ),
+                # # torso.velocities
+                # ActionConfig(
+                #     rep=ActionRepresentation.ABSOLUTE,
+                #     type=ActionType.NON_EEF,
+                #     format=ActionFormat.DEFAULT,
+                # ),
             ],
         ),
     },
@@ -429,6 +429,80 @@ MODALITY_CONFIGS = {
             ],
         ),
     },
+    "robochallenge": {
+        # Unified RoboChallenge manipulation config for ARX5, UR5, FRANKA, ALOHA.
+        # State: unified 8D per arm (x, y, z, qx, qy, qz, qw, gripper).
+        # Single-arm robots populate `state` / `action`, dual-arm ALOHA uses left/right fields.
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=[
+                "ee_pose_gripper_base",  # (8,) for single-arm robots, zero for ALOHA
+                "left_ee_pose_gripper_base",  # (8,) for ALOHA left arm, zero for single-arm robots
+                "right_ee_pose_gripper_base",  # (8,) for ALOHA right arm, zero for single-arm robots
+            ],
+        ),
+        "action": ModalityConfig(
+            # Action chunks are 8 steps long by default.
+            delta_indices=list(range(30)),
+            modality_keys=[
+                "ee_pose_gripper_base",  # (8,) single-arm target action
+                "left_ee_pose_gripper_base",  # (8,) ALOHA left arm target action
+                "right_ee_pose_gripper_base",  # (8,) ALOHA right arm target action
+            ],
+            action_configs=[
+                # action
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_QUAT_XYZW,
+                ),
+                # action_left
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_QUAT_XYZW,
+                ),
+                # action_right
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_QUAT_XYZW,
+                ),
+            ],
+        ),
+    },
+    "unitree_g1_ee": {
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=[
+                "state_ee_left",
+                "state_ee_right",
+            ],
+        ),
+        "action": ModalityConfig(
+            delta_indices=list(range(30)),
+            modality_keys=[
+                "action_ee_left",
+                "action_ee_right",
+            ],
+            action_configs=[
+                # action_ee_left
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_RPY,
+                    state_key="state_ee_left",
+                ),
+                # action_ee_right
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_RPY,
+                    state_key="state_ee_right",
+                ),
+            ],
+        ),
+    }
 }
 
 

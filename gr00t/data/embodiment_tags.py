@@ -59,6 +59,16 @@ class EmbodimentTag(Enum):
     The Galaxea R1 Lite robot.
     """
 
+    ROBOCHALLENGE = "robochallenge"
+    """
+    The RoboChallenge robot.
+    """
+
+    UNITREE_G1_EE = "unitree_g1_ee"
+    """
+    The Unitree G1 robot.
+    """
+
     # New embodiment during post-training
     NEW_EMBODIMENT = "new_embodiment"
     """

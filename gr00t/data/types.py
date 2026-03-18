@@ -31,6 +31,7 @@ class ActionFormat(Enum):
     XYZ_ROT6D = "xyz+rot6d"
     XYZ_ROTVEC = "xyz+rotvec"
     XYZ_QUAT_XYZW = "xyz+quat_xyzw"
+    XYZ_RPY = "xyz+rpy"
 
 
 @dataclass

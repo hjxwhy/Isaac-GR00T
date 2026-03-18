@@ -163,6 +163,7 @@ class RelativeActionLoader:
         )
         # Check state config
         state_key = self.action_config.state_key or action_key
+        print(f"State key: {state_key}")
         assert state_key in MODALITY_CONFIGS[embodiment_tag.value]["state"].modality_keys
         self.modality_configs["state"] = ModalityConfig(
             delta_indices=MODALITY_CONFIGS[embodiment_tag.value]["state"].delta_indices,

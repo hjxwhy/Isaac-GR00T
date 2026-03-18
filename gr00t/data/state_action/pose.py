@@ -668,7 +668,7 @@ class EndEffectorPose(Pose):
 
         Args:
             data: Flat array whose layout depends on action_format.
-            action_format: One of ActionFormat.XYZ_ROT6D, XYZ_ROTVEC, or DEFAULT.
+            action_format: One of ActionFormat.XYZ_ROT6D, XYZ_ROTVEC, XYZ_QUAT_XYZW, XYZ_RPY, or DEFAULT.
 
         Returns:
             EndEffectorPose instance.
@@ -679,6 +679,8 @@ class EndEffectorPose(Pose):
             return cls(translation=data[:3], rotation=data[3:], rotation_type="rotvec")
         elif action_format == ActionFormat.XYZ_QUAT_XYZW:
             return cls(translation=data[:3], rotation=data[3:7], rotation_type="quat", rotation_order="xyzw")
+        elif action_format == ActionFormat.XYZ_RPY:
+            return cls(translation=data[:3], rotation=data[3:6], rotation_type="euler", rotation_order="xyz", degrees=False)
         elif action_format == ActionFormat.DEFAULT:
             return cls(homogeneous=data.reshape(4, 4))
         else:
