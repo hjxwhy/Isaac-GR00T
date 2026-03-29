@@ -39,6 +39,11 @@ class EmbodimentTag(Enum):
     The Open-X-Embodiment Google robot.
     """
 
+    OXE_NEW = "oxe_new"
+    """
+    The Open-X-Embodiment New robot.
+    """
+
     OXE_WIDOWX = "oxe_widowx"
     """
     The Open-X-Embodiment WidowX robot.
@@ -59,9 +64,14 @@ class EmbodimentTag(Enum):
     The Galaxea R1 Lite robot.
     """
 
-    ROBOCHALLENGE = "robochallenge"
+    ROBOCHALLENGE_SINGLE_ARM = "robochallenge_single_arm"
     """
-    The RoboChallenge robot.
+    The RoboChallenge single-arm robot.
+    """
+
+    ROBOCHALLENGE_DUAL_ARM = "robochallenge_dual_arm"
+    """
+    The RoboChallenge dual-arm robot.
     """
 
     UNITREE_G1_EE = "unitree_g1_ee"
