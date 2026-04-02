@@ -466,15 +466,15 @@ MODALITY_CONFIGS = {
         "state": ModalityConfig(
             delta_indices=[0],
             modality_keys=[
-                "left_ee_pose_gripper_torso",
-                "right_ee_pose_gripper_torso",
+                "left_ee_pose_gripper_base",
+                "right_ee_pose_gripper_base",
             ],
         ),
         "action": ModalityConfig(
             delta_indices=list(range(30)),
             modality_keys=[
-                "left_ee_pose_gripper_torso",
-                "right_ee_pose_gripper_torso",
+                "left_ee_pose_gripper_base",
+                "right_ee_pose_gripper_base",
             ],
             action_configs=[
                 # action_ee_left
@@ -482,14 +482,14 @@ MODALITY_CONFIGS = {
                     rep=ActionRepresentation.RELATIVE,
                     type=ActionType.EEF,
                     format=ActionFormat.XYZ_RPY,
-                    state_key="left_ee_pose_gripper_torso",
+                    state_key="left_ee_pose_gripper_base",
                 ),
                 # action_ee_right
                 ActionConfig(
                     rep=ActionRepresentation.RELATIVE,
                     type=ActionType.EEF,
                     format=ActionFormat.XYZ_RPY,
-                    state_key="right_ee_pose_gripper_torso",
+                    state_key="right_ee_pose_gripper_base",
                 ),
             ],
         ),
