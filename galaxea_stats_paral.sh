@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+DATA="/home/unitree/remote_jensen2/robotics_pretrain_data/"
+SAVE_ROOT_BASE="./robotics_pretrain_data"
+
+DATASETS=(
+  "Galaxea-Open-World-Dataset/lerobot_v3_new"
+  "robochallenge_diff_robotics/ur5"
+  "unitree_g1_hangzhou/unitree_401_g1_wo_stereo"
+  "oxe_lerobot_v3_0"
+)
+
+EMBODIMENT_TAGs=(
+  "R1_LITE"
+  "ROBOCHALLENGE_SINGLE_ARM"
+  "UNITREE_G1_EE"
+  "OXE_WIDOWX"
+  "OXE_GOOGLE"
+)
+
+DATASET_ID=2
 
 # Root directory containing all lerobot_v3_0 task folders
-# DATA_ROOT="$DATA/Galaxea-Open-World-Dataset/lerobot_v3_new/"
-# DATA_ROOT="$DATA/robochallenge_diff_robotics/ur5"
-DATA_ROOT="$DATA/unitree_g1_hangzhou/unitree_401_g1_wo_stereo/"
-DATA_ROOT="$DATA/oxe_lerobot_v3_0/"
-
+DATA_ROOT="$DATA/${DATASETS[DATASET_ID]}"
+SAVE_ROOT="$SAVE_ROOT_BASE/${DATASETS[DATASET_ID]}"
 
 # Embodiment and output format are fixed as in the example
-# EMBODIMENT_TAG="R1_LITE"
-# EMBODIMENT_TAG="ROBOCHALLENGE_SINGLE_ARM"
-# EMBODIMENT_TAG="ROBOCHALLENGE_DUAL_ARM"
-EMBODIMENT_TAG="UNITREE_G1_EE"
-# EMBODIMENT_TAG="OXE_WIDOWX"
-# EMBODIMENT_TAG="OXE_GOOGLE"
+EMBODIMENT_TAG="${EMBODIMENT_TAGs[DATASET_ID]}"
 
 OUTPUT_FORMAT="XYZ_ROTVEC"
 
