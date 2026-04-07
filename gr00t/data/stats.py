@@ -313,6 +313,7 @@ def generate_rel_stats(
     dataset_path: Path | str,
     embodiment_tag: EmbodimentTag,
     output_format: ActionFormat | None = None,
+    save_path: Path | str | None = None,
 ) -> None:
     dataset_path = Path(dataset_path)
     action_config = MODALITY_CONFIGS[embodiment_tag.value]["action"]
@@ -323,7 +324,8 @@ def generate_rel_stats(
         for key, action_config in zip(action_config.modality_keys, action_config.action_configs)
         if action_config.rep == ActionRepresentation.RELATIVE
     ]
-    stats_path = Path(dataset_path) / LE_ROBOT_REL_STATS_FILENAME
+    root_path = Path(save_path) if save_path is not None else dataset_path
+    stats_path = root_path / LE_ROBOT_REL_STATS_FILENAME
     if stats_path.exists():
         with open(stats_path, "r") as f:
             stats = json.load(f)
@@ -337,6 +339,7 @@ def generate_rel_stats(
         stats[action_key] = calculate_stats_for_key(
             dataset_path, embodiment_tag, action_key, output_format=output_format
         )
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
     with open(stats_path, "w") as f:
         json.dump(to_json_serializable(dict(stats)), f, indent=4)
 
@@ -345,9 +348,10 @@ def main(
     dataset_path: Path | str,
     embodiment_tag: EmbodimentTag,
     output_format: ActionFormat | None = None,
+    save_path: Path | str | None = None,
 ):
     # generate_stats(dataset_path)
-    generate_rel_stats(dataset_path, embodiment_tag, output_format=output_format)
+    generate_rel_stats(dataset_path, embodiment_tag, output_format=output_format, save_path=save_path)
 
 
 if __name__ == "__main__":
