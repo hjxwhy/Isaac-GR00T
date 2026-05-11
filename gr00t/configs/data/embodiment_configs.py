@@ -360,45 +360,24 @@ MODALITY_CONFIGS = {
         ),
     },
     "oxe_droid": {
-        "video": ModalityConfig(
-            delta_indices=[0],
-            modality_keys=[
-                "exterior_image_1_left",
-                "wrist_image_left",
-            ],
-        ),
         "state": ModalityConfig(
             delta_indices=[0],
             modality_keys=[
-                "joint_position",
-                "gripper_position",
+                "ee_pose_gripper_base",
             ],
         ),
         "action": ModalityConfig(
-            delta_indices=list(range(0, 32)),
+            delta_indices=list(range(15)),
             modality_keys=[
-                "joint_position",
-                "gripper_position",
+                "ee_pose_gripper_base",
             ],
             action_configs=[
-                # joint_position
                 ActionConfig(
                     rep=ActionRepresentation.RELATIVE,
-                    type=ActionType.NON_EEF,
-                    format=ActionFormat.DEFAULT,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_RPY,
+                    state_key="ee_pose_gripper_base",
                 ),
-                # gripper_position
-                ActionConfig(
-                    rep=ActionRepresentation.ABSOLUTE,
-                    type=ActionType.NON_EEF,
-                    format=ActionFormat.DEFAULT,
-                ),
-            ],
-        ),
-        "language": ModalityConfig(
-            delta_indices=[0],
-            modality_keys=[
-                "annotation.language.language_instruction",
             ],
         ),
     },
@@ -579,6 +558,28 @@ MODALITY_CONFIGS = {
             ],
         ),
     },
+    "libero": {
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=[
+                "ee_pose_gripper_base",
+            ],
+        ),
+        "action": ModalityConfig(
+            delta_indices=list(range(20)),
+            modality_keys=[
+                "ee_pose_gripper_base",
+            ],
+            action_configs=[
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.XYZ_ROTVEC,
+                    state_key="ee_pose_gripper_base",
+                ),
+            ],
+        ),
+    },    
 }
 
 

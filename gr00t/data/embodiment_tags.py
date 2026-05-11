@@ -81,6 +81,8 @@ class EmbodimentTag(Enum):
     
     UNITREE_G1_EE_WITH_BASE = "unitree_g1_ee_with_base"
 
+    LIBERO =  "libero"
+
     # New embodiment during post-training
     NEW_EMBODIMENT = "new_embodiment"
     """

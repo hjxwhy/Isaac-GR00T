@@ -12,6 +12,7 @@ Args:
 """
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -65,7 +66,9 @@ def _load_v3_episode_records(dataset_path: Path) -> list[dict]:
 
 
 def calculate_dataset_statistics(
-    parquet_paths: list[Path], features: list[str] | None = None
+    parquet_paths: list[Path],
+    features: list[str] | None = None,
+    feature_converters: dict[str, Callable[[np.ndarray], np.ndarray]] | None = None,
 ) -> dict[str, dict[str, float]]:
     """Calculate the dataset statistics of all columns for a list of parquet files.
 
@@ -99,6 +102,8 @@ def calculate_dataset_statistics(
         np_data = np.vstack(
             [np.asarray(x, dtype=np.float32) for x in all_low_dim_data[le_modality]]
         )
+        if feature_converters and le_modality in feature_converters:
+            np_data = feature_converters[le_modality](np_data)
         dataset_statistics[le_modality] = dict(
             mean=np.mean(np_data, axis=0).tolist(),
             std=np.std(np_data, axis=0).tolist(),
@@ -127,8 +132,23 @@ def check_stats_validity(dataset_path: Path | str, features: list[str]):
     return True
 
 
-def generate_stats(dataset_path: Path | str):
+def _make_eef_converter(
+    input_format: ActionFormat, output_format: ActionFormat
+) -> Callable[[np.ndarray], np.ndarray]:
+    def convert(data: np.ndarray) -> np.ndarray:
+        chunk = EndEffectorActionChunk.from_array(data, input_format)
+        return chunk.to(output_format).astype(np.float32)
+    return convert
+
+
+def generate_stats(
+    dataset_path: Path | str,
+    embodiment_tag: EmbodimentTag | None = None,
+    output_format: ActionFormat | None = None,
+    save_path: Path | str | None = None,
+):
     dataset_path = Path(dataset_path)
+    root_path = Path(save_path) if save_path is not None else dataset_path
     print(f"Generating stats for {str(dataset_path)}")
     lowdim_features = []
     with open(dataset_path / LE_ROBOT_INFO_FILENAME, "r") as f:
@@ -136,12 +156,28 @@ def generate_stats(dataset_path: Path | str):
     for feature in le_features:
         if "float" in le_features[feature]["dtype"]:
             lowdim_features.append(feature)
-    if check_stats_validity(dataset_path, lowdim_features):
+    if check_stats_validity(root_path, lowdim_features):
         return
 
+    feature_converters: dict[str, Callable] = {}
+    if embodiment_tag is not None and output_format is not None:
+        action_cfg = MODALITY_CONFIGS[embodiment_tag.value]["action"]
+        state_modality_keys = MODALITY_CONFIGS[embodiment_tag.value]["state"].modality_keys
+        if action_cfg.action_configs is not None:
+            for key, ac in zip(action_cfg.modality_keys, action_cfg.action_configs):
+                if ac.type == ActionType.EEF and ac.format != output_format:
+                    state_key = ac.state_key or key
+                    if state_key in state_modality_keys:
+                        feature_converters[f"observation.state.{state_key}"] = _make_eef_converter(
+                            ac.format, output_format
+                        )
+
     parquet_files = list(dataset_path.glob(LE_ROBOT_DATA_FILENAME))
-    stats = calculate_dataset_statistics(parquet_files, lowdim_features)
-    stats_path = dataset_path / LE_ROBOT_STATS_FILENAME
+    stats = calculate_dataset_statistics(
+        parquet_files, lowdim_features, feature_converters=feature_converters or None
+    )
+    stats_path = root_path / LE_ROBOT_STATS_FILENAME
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
     with open(stats_path, "w") as f:
         json.dump(stats, f, indent=4)
 
@@ -350,7 +386,7 @@ def main(
     output_format: ActionFormat | None = None,
     save_path: Path | str | None = None,
 ):
-    # generate_stats(dataset_path)
+    # generate_stats(dataset_path, embodiment_tag=embodiment_tag, output_format=output_format, save_path=save_path)
     generate_rel_stats(dataset_path, embodiment_tag, output_format=output_format, save_path=save_path)
 
 
