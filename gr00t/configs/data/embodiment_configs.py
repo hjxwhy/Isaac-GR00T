@@ -513,7 +513,30 @@ MODALITY_CONFIGS = {
                 ),
             ],
         ),
-    },    
+    },
+    "unitree_g1_smpl_base_rot": {
+        "state": ModalityConfig(
+            delta_indices=[0],
+            modality_keys=[
+                "state_base_rot_quat",
+            ],
+        ),
+        "action": ModalityConfig(
+            delta_indices=list(range(30)),
+            modality_keys=[
+                "action_base_rot",
+            ],
+            action_configs=[
+                # action_base_rot
+                ActionConfig(
+                    rep=ActionRepresentation.RELATIVE,
+                    type=ActionType.EEF,
+                    format=ActionFormat.QUAT_XYZW,
+                    state_key="state_base_rot_quat",
+                ),
+            ],
+        ),
+    },
     "oxe_widowx": {
         "state": ModalityConfig(
             delta_indices=[0],

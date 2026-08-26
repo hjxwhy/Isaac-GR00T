@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail  # 移除 -e 避免并行任务失败直接中断整个脚本
 
+export HF_HOME=/cpfs01/cpfs01/cache/huggingface
+export HF_LEROBOT_HOME=/cpfs01/cpfs01/cache/huggingface/lerobot
+
 # ================= 配置区 =================
 DATA="/cpfs01/cpfs01/datas/robotics_pretrain_data"
 SAVE_ROOT_BASE="/cpfs01/jensen/data/stats/robotics_pretrain_data"
@@ -14,7 +17,8 @@ DATASETS_NAME=(
   # "unitree_g1_hangzhou/unitree_401_g1_wo_stereo"
   # "unitree_g1_hangzhou/unitree_410_g1_with_stereo"
   # "unitree_g1_hangzhou/unitree_410_g1_wo_stereo"
-  # "unitree_g1_jidi/unitree_g1_jidi_opensource_0327"
+  # "unitree_g1_hangzhou/unitree_410_g1_with_stereo_0526"
+  # "unitree_g1_jidi/unitree_g1_jidi_opensource_v1"
   # "unitree_g1_jidi/dex_hand/unitree_g1_jidi_opensource_0327"
   # "unitree_g1_jidi/dex_hand/unitree_g1_jidi_opensource_0422"
   # "unitree_g1_jidi/dex_hand/unitree_g1_jidi_opensource_0501"
@@ -23,9 +27,13 @@ DATASETS_NAME=(
   # "unitree_g1_singapore_merged/wo_stereo"
   # "oxe_lerobot_v3_0"
   # "unitree_g1_hangzhou/unitree_410_g1_with_stereo_0415"
+  # "unitree_g1_hangzhou/unitree_410_g1_with_stereo_0508"
   # "droid_lerobot_v3"
   # "agibot_world_beta_lerobot/gripper"
-  "libero_flip_width"
+  # "simulation_dataset/libero_flip_width"
+  # "simulation_dataset/RoboTwin"
+  # "agibot_world_beta_lerobot/gripper"
+  "unitree_g1_shanghai_smpl"
 )
 
 EMBODIMENT_TAGS=(
@@ -34,6 +42,7 @@ EMBODIMENT_TAGS=(
   # "ROBOCHALLENGE_SINGLE_ARM"
   # "ROBOCHALLENGE_SINGLE_ARM"
   # "ROBOCHALLENGE_DUAL_ARM"
+  # "UNITREE_G1_EE"
   # "UNITREE_G1_EE"
   # "UNITREE_G1_EE"
   # "UNITREE_G1_EE"
@@ -46,9 +55,13 @@ EMBODIMENT_TAGS=(
   # "UNITREE_G1_EE"
   # "OXE_WIDOWX"
   # "UNITREE_G1_EE"
+  # "UNITREE_G1_EE"
   # "OXE_DROID"
   # "UNITREE_G1_EE"
-  "LIBERO"
+  # "LIBERO"
+  # "UNITREE_G1_EE"
+  # "UNITREE_G1_EE"
+  "UNITREE_G1_SMPL_BASE_ROT"
 )
 
 # 校验数组长度是否一致
@@ -59,7 +72,7 @@ fi
 
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 LOG_DIR_BASE="${LOG_DIR:-stats_logs}"
-OUTPUT_FORMAT="XYZ_ROTVEC"
+OUTPUT_FORMAT="ROTVEC"
 mkdir -p "${LOG_DIR_BASE}"
 export PYTHONPATH="$(pwd)"
 

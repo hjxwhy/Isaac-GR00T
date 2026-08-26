@@ -367,7 +367,7 @@ def generate_rel_stats(
             stats = json.load(f)
     else:
         stats = {}
-
+    stats = {}
     for action_key in sorted(action_keys):
         if action_key in stats:
             continue

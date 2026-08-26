@@ -679,6 +679,10 @@ class EndEffectorPose(Pose):
             return cls(translation=data[:3], rotation=data[3:], rotation_type="rotvec")
         elif action_format == ActionFormat.XYZ_QUAT_XYZW:
             return cls(translation=data[:3], rotation=data[3:7], rotation_type="quat", rotation_order="xyzw")
+        elif action_format == ActionFormat.QUAT_XYZW:
+            return cls(translation=np.zeros(3), rotation=data[:4], rotation_type="quat", rotation_order="xyzw")
+        elif action_format == ActionFormat.ROTVEC:
+            return cls(translation=np.zeros(3), rotation=data[:3], rotation_type="rotvec")
         elif action_format == ActionFormat.XYZ_RPY:
             return cls(translation=data[:3], rotation=data[3:6], rotation_type="euler", rotation_order="xyz", degrees=False)
         elif action_format == ActionFormat.DEFAULT:

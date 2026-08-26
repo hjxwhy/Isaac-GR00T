@@ -32,6 +32,8 @@ class ActionFormat(Enum):
     XYZ_ROTVEC = "xyz+rotvec"
     XYZ_QUAT_XYZW = "xyz+quat_xyzw"
     XYZ_RPY = "xyz+rpy"
+    QUAT_XYZW = "quat_xyzw"  # rotation-only, no translation
+    ROTVEC = "rotvec"  # rotation-only, no translation
 
 
 @dataclass
